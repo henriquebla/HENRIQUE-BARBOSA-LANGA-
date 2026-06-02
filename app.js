@@ -1,95 +1,98 @@
-const inputNome = document.querySelector('#inputNome');
-inputNome.addEventListener('focus', function() {
-limparErro('#inputNome', '#erroNome');
-});
-inputNome.addEventListener('blur', function() {
-if (inputNome.value.trim() === '') {
-mostrarErro('#inputNome', '#erroNome', 'Nome obrigatorio');
-} else {
-limparErro('#inputNome', '#erroNome');
+const form = document.querySelector('#formCadastro');
+const inputCEP = document.querySelector('#inputCEP');
+const statusCEP = document.querySelector('#statusCEP');
+const erroCEP = document.querySelector('#erroCEP');
+// Mesmas funções auxiliares da Aula 12
+function mostrarErro(inputId, erroId, msg) {
+document.querySelector(inputId).classList.add('campo-erro');
+document.querySelector(inputId).classList.remove('campo-ok');
+const span = document.querySelector(erroId);
+span.textContent = msg;
+span.classList.remove('oculto');
 }
-});
-const inputEmail = document.querySelector('#inputEmail');
-inputEmail.addEventListener('focus', function() {
-limparErro('#inputEmail', '#erroEmail');
-});
-inputEmail.addEventListener('blur', function() {
-const v = inputEmail.value.trim();
-if (!v.includes('@') || !v.includes('.')) {
-mostrarErro('#inputEmail', '#erroEmail', 'E-mail invalido');
-} else {
-limparErro('#inputEmail', '#erroEmail');
+function limparErro(inputId, erroId) {
+document.querySelector(inputId).classList.remove('campo-erro');
+document.querySelector(inputId).classList.add('campo-ok');
+document.querySelector(erroId).classList.add('oculto');
 }
-});
-const inputNota = document.querySelector('#inputNota');
-inputNota.addEventListener('focus', function() {
-limparErro('#inputNota', '#erroNota');
-});
-inputNota.addEventListener('blur', function() {
-const v = inputNota.value.trim();
+function limparEndereco() {
+document.querySelector('#logradouro').value = '';
+document.querySelector('#bairro').value = '';
+document.querySelector('#cidade').value = '';
+document.querySelector('#uf').value = '';
+}
+async function buscarCEP(cep) {
+statusCEP.textContent = 'Buscando...';
+erroCEP.classList.add('oculto');
+inputCEP.classList.remove('campo-erro', 'campo-ok');
+const url = 'https://viacep.com.br/ws/' + cep + '/json/';
+try {
+const resposta = await fetch(url);
+const dados = await resposta.json();
 
-if (v === '' || isNaN(v)) {
-mostrarErro('#inputNota', '#erroNota', 'Digite um numero');
+if (dados.erro) {
+statusCEP.textContent = '';
+mostrarErro('#inputCEP', '#erroCEP', 'CEP nao encontrado');
+limparEndereco();
 return;
 }
-const n = parseFloat(v);
-if (n < 1 || n > 10) {
-mostrarErro('#inputNota', '#erroNota', 'Nota entre 1 e 10');
-} else {
-limparErro('#inputNota', '#erroNota');
+statusCEP.textContent = 'Endereco encontrado!';
+inputCEP.classList.add('campo-ok');
+document.querySelector('#logradouro').value = dados.logradouro ||
+'';
+document.querySelector('#bairro').value = dados.bairro ||
+'';
+document.querySelector('#cidade').value = dados.localidade ||
+'';
+document.querySelector('#uf').value = dados.uf ||
+'';
+} catch (erro) {
+statusCEP.textContent = '';
+mostrarErro('#inputCEP', '#erroCEP', 'Erro de conexao');
+limparEndereco();
 }
+}
+inputCEP.addEventListener('focus', function() {
+statusCEP.textContent = '';
+limparErro('#inputCEP', '#erroCEP');
+limparEndereco();
 });
-const inputComentario = document.querySelector('#inputComentario');
-const contadorChars = document.querySelector('#contadorChars');
-const LIMITE = 200;
-inputComentario.addEventListener('input', function() {
-const qtd = inputComentario.value.length;
-contadorChars.textContent = qtd + ' / ' + LIMITE;
-if (qtd > LIMITE) {
-contadorChars.classList.add('limite');
-mostrarErro('#inputComentario', '#erroComentario',
-'Limite de ' + LIMITE + ' caracteres atingido');
-} else if (qtd < 10) {
-contadorChars.classList.remove('limite');
-mostrarErro('#inputComentario', '#erroComentario',
-'Minimo 10 caracteres');
-} else {
-contadorChars.classList.remove('limite');
-limparErro('#inputComentario', '#erroComentario');
-}
+inputCEP.addEventListener('blur', function() {
+    // Pega o valor atual do input de CEP
+    const cep = inputCEP.value.trim(); 
+
+    limparEndereco();
+    
+    if (isNaN(cep) || cep.length !== 8) {
+        mostrarErro('#inputCEP', '#erroCEP', 'CEP: 8 digitos numericos');
+        limparEndereco();
+        return;
+    }
+    
+    buscarCEP(cep);
 });
-function validarNome() {
-if (inputNome.value.trim() === '') {
-mostrarErro('#inputNome', '#erroNome', 'Nome obrigatorio');
-return false;
-}
-limparErro('#inputNome', '#erroNome');
-return true;
-}
-function validarEmail() {
-const v = inputEmail.value.trim();
-if (!v.includes('@') || !v.includes('.')) {
-mostrarErro('#inputEmail', '#erroEmail', 'E-mail invalido');
-return false;
-}
-limparErro('#inputEmail', '#erroEmail');
-return true;
-}
-function validarNota() {
-const v = inputNota.value.trim();
-const n = parseFloat(v);
-if (v === '' || isNaN(v) || n < 1 || n > 10) {
-mostrarErro('#inputNota', '#erroNota', 'Nota entre 1 e 10');
-return false;
-}
-limparErro('#inputNota', '#erroNota');
-return true;
-}
+
 form.addEventListener('submit', function(e) {
-e.preventDefault();
-const ok = validarNome() & validarEmail() & validarNota();
-if (ok) {
-alert('Avaliacao enviada! Obrigado.');
-form.reset();
-}
+    e.preventDefault();
+    
+    const logradouro = document.querySelector('#logradouro').value;
+    const inputNumero = document.querySelector('#inputNumero');
+    
+    if (logradouro === '') {
+        mostrarErro('#inputCEP', '#erroCEP', 'Busque um CEP valido primeiro');
+        inputCEP.focus();
+        return;
+    }
+    
+    if (inputNumero.value.trim() === '') {
+        mostrarErro('#inputNumero', '#erroNumero', 'Numero obrigatorio');
+        inputNumero.focus();
+        return;
+    }
+    
+    const endereco = logradouro + ', ' + inputNumero.value.trim()
+        + ' - ' + document.querySelector('#cidade').value
+        + ' / ' + document.querySelector('#uf').value;
+        
+    alert('Endereco confirmado:\n' + endereco);
 });
